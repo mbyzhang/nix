@@ -126,6 +126,8 @@ libc_enum! {
         PTRACE_SYSEMU_SINGLESTEP,
         #[cfg(all(target_os = "linux", target_env = "gnu"))]
         PTRACE_GET_SYSCALL_INFO,
+        PTRACE_GETSIGMASK,
+        PTRACE_SETSIGMASK,
     }
 }
 
@@ -325,7 +327,7 @@ fn ptrace_get_data<T>(request: Request, pid: Pid) -> Result<T> {
         libc::ptrace(
             request as RequestType,
             libc::pid_t::from(pid),
-            ptr::null_mut::<T>(),
+            mem::size_of::<T>(),
             data.as_mut_ptr() as *const _ as *const c_void,
         )
     };
@@ -371,6 +373,11 @@ pub fn getsiginfo(pid: Pid) -> Result<siginfo_t> {
     ptrace_get_data::<siginfo_t>(Request::PTRACE_GETSIGINFO, pid)
 }
 
+/// Get sigmask as with `ptrace(PTRACE_GETSIGMASK,...)`
+pub fn getsigmask(pid: Pid) -> Result<u64> {
+    ptrace_get_data::<u64>(Request::PTRACE_GETSIGMASK, pid)
+}
+
 /// Get ptrace syscall info as with `ptrace(PTRACE_GET_SYSCALL_INFO,...)`
 /// Only available on Linux 5.3+
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
@@ -401,6 +408,19 @@ pub fn setsiginfo(pid: Pid, sig: &siginfo_t) -> Result<()> {
     match Errno::result(ret) {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
+    }
+}
+
+/// Set sigmask as with `ptrace(PTRACE_SETSIGMASK,...)`
+pub fn setsigmask(pid: Pid, mask: u64) -> Result<()> {
+    unsafe {
+        ptrace_other(
+            Request::PTRACE_SETSIGMASK,
+            pid,
+            mem::size_of::<u64>() as _,
+            &mask as *const _ as *mut c_void,
+        )
+        .map(drop)
     }
 }
 

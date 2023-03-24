@@ -66,6 +66,25 @@ fn test_ptrace_setsiginfo() {
     }
 }
 
+// Just make sure ptrace_getsigmask can be called at all, for now.
+#[test]
+fn test_ptrace_getsigmask() {
+    require_capability!("test_ptrace_getsigmask", CAP_SYS_PTRACE);
+    if let Err(Errno::EOPNOTSUPP) = ptrace::getsigmask(getpid()) {
+        panic!("ptrace_getsigmask returns Errno::EOPNOTSUPP!");
+    }
+}
+
+// Just make sure ptrace_setsigmask can be called at all, for now.
+#[test]
+fn test_ptrace_setsigmask() {
+    require_capability!("test_ptrace_setsigmask", CAP_SYS_PTRACE);
+    let sigmask = unsafe { mem::zeroed() };
+    if let Err(Errno::EOPNOTSUPP) = ptrace::setsigmask(getpid(), &sigmask) {
+        panic!("ptrace_setsigmask returns Errno::EOPNOTSUPP!");
+    }
+}
+
 #[test]
 fn test_ptrace_cont() {
     use nix::sys::ptrace;

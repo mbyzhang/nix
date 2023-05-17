@@ -260,6 +260,8 @@ libc_bitflags! {
         /// Send a SIGKILL to the tracee if the tracer exits.  This is useful
         /// for ptrace jailers to prevent tracees from escaping their control.
         PTRACE_O_EXITKILL;
+        /// Allow the tracee to be traced by any thread in the thread group of the tracer.
+        PTRACE_O_ALLOW_TRACER_THREAD_GROUP;
     }
 }
 

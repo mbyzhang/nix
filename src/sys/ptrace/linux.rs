@@ -5,7 +5,7 @@ use crate::sys::signal::Signal;
 use crate::unistd::Pid;
 use crate::Result;
 use cfg_if::cfg_if;
-use libc::{self, c_long, c_void, siginfo_t};
+use libc::{self, c_long, c_void, ptrace_rseq_configuration, siginfo_t};
 use std::{mem, ptr};
 
 pub type AddressType = *mut ::libc::c_void;
@@ -128,6 +128,8 @@ libc_enum! {
         PTRACE_GET_SYSCALL_INFO,
         PTRACE_GETSIGMASK,
         PTRACE_SETSIGMASK,
+        #[cfg(all(target_os = "linux", target_env = "gnu"))]
+        PTRACE_GET_RSEQ_CONFIGURATION,
     }
 }
 
@@ -394,6 +396,20 @@ pub fn getsyscallinfo(pid: Pid) -> Result<SyscallInfo> {
         )?;
     }
     SyscallInfo::from_raw(unsafe { data.assume_init() })
+}
+
+/// Get rseq configuration as with `ptrace(PTRACE_GET_RSEQ_CONFIGURATION,...)`
+pub fn get_rseq_configuration(pid: Pid) -> Result<ptrace_rseq_configuration> {
+    let mut data = mem::MaybeUninit::uninit();
+    unsafe {
+        ptrace_other(
+            Request::PTRACE_GET_RSEQ_CONFIGURATION,
+            pid,
+            mem::size_of::<ptrace_rseq_configuration>() as *mut c_void,
+            data.as_mut_ptr() as *mut _ as *mut c_void,
+        )?;
+    }
+    Ok(unsafe { data.assume_init() })
 }
 
 /// Set siginfo as with `ptrace(PTRACE_SETSIGINFO,...)`
